@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Analyzer - Real-time Vision Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .analyzer-overlay {
+            background: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.4));
+            animation: pulse 2s infinite;
+        }
+
+         .sidebar-feature {
+            padding: 1.25rem;
+            margin: 0.75rem 0;
+            border-radius: 0.75rem;
+            background: rgba(79, 70, 229, 0.15);
+            border-left: 4px solid #4F46E5;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.1), 0 2px 4px -1px rgba(79, 70, 229, 0.06);
+            backdrop-filter: blur(8px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-feature:hover {
+            background: rgba(79, 70, 229, 0.2);
+            transform: translateX(4px);
+        }
+
+        .sidebar-feature h3 {
+            color: #4F46E5;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-feature p {
+            color: #9CA3AF;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0.6; }
+        }
+
+        .scanning-line {
+            position: absolute;
+            height: 2px;
+            background: #4F46E5;
+            width: 100%;
+            top: 0;
+            animation: scan 3s linear infinite;
+            box-shadow: 0 0 8px #4F46E5;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .detection-box {
+            border: 2px solid #4F46E5;
+            animation: detect 1s ease-in-out infinite;
+        }
+
+        @keyframes detect {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        .loading-text {
+             position: absolute;
+             top: 50%;
+             left: 50%;
+             transform: translate(-50%, -50%);
+             color: #fff; /* white text */
+             font-size: 1.5rem;
+             text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-black min-h-screen">
+    <div class="fixed top-0 left-0 w-full h-16 bg-gray-800 shadow-lg z-50">
+        <div class="flex items-center justify-between h-full px-6">
+            <div class="flex items-center">
+                <svg class="w-8 h-8 text-indigo-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <h1 class="ml-3 text-xl font-bold text-white">Video Analyzer</h1>
+            </div>
+            <button id="end-analysis" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                Stop Analysis
+            </button>
+        </div>
+    </div>
+
+    <div class="pt-20 px-4">
+        <!-- Feature Description -->
+        <div class="mb-8 text-center">
+            <h2 class="text-2xl font-bold text-white mb-4">Your Real-time Vision Assistant</h2>
+            <p class="text-gray-300 max-w-3xl mx-auto">
+                This advanced video analyzer uses AI to provide real-time assistance by:
+            </p>
+            
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2">
+                <div class="relative w-full aspect-video bg-gray-800 rounded-lg overflow-hidden">
+                    <video id="video-feed" class="absolute inset-0 w-full h-full object-cover" autoplay></video>
+                    <div class="analyzer-overlay absolute inset-0"></div>
+                    <div class="scanning-line"></div>
+                    <div id="detection-boxes"></div>
+                    <div id="loading-text" class="loading-text">
+                        Analyzing Camera Feed...
+                     </div>
+                     <div class="absolute top-4 right-4 bg-indigo-600 px-3 py-1 rounded-full text-white text-sm font-medium animate-pulse">
+                        ANALYZING
+                     </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-bold text-white mb-4">Real-time Analysis</h2>
+                <div id="analysis-feed" class="space-y-4">
+                    <div class="sidebar-feature">
+                        <h3>Object Detection</h3>
+                         <p class="text-gray-400 text-sm">Identifies objects, people, and obstacles in your surroundings in real-time</p>
+                    </div>
+                    <div class="sidebar-feature">
+                        <h3>Text Recognition</h3>
+                        <p class="text-gray-400 text-sm">Reads and summarizes text from signs, documents, and displays</p>
+                    </div>
+                    <div class="sidebar-feature">
+                        <h3>Scene Understanding</h3>
+                         <p class="text-gray-400 text-sm">Describes environments and provides spatial awareness guidance</p>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const videoFeed = document.getElementById('video-feed');
+        const endAnalysisButton = document.getElementById('end-analysis');
+        const detectionBoxes = document.getElementById('detection-boxes');
+        const loadingText = document.getElementById('loading-text')
+        let videoWs;
+         const analysisMessages = [
+            "Analyzing Camera Feed...",
+             "Scanning Environment...",
+             "Processing Visual Data...",
+             "Identifying Objects...",
+            "Reading Text...",
+            "Understanding Scene..."
+         ];
+
+        let messageIndex = 0;
+        let loadingInterval;
+
+
+        function initializeWebSocket() {
+            videoWs = new WebSocket(`ws://${window.location.host}/ws/video`);
+            
+            videoWs.onmessage = (event) => {
+                const frame = JSON.parse(event.data);
+                if (frame && frame.data) {
+                    const img = `data:${frame.mime_type};base64,${frame.data}`;
+                    videoFeed.src = img;
+                    simulateDetections();
+                     loadingText.style.display = "none";
+                     clearInterval(loadingInterval)
+                }
+            };
+
+            videoWs.onclose = () => {
+                console.log('Analysis session ended');
+                window.location.href = '/';
+            };
+        }
+
+       function startLoadingAnimation() {
+            loadingInterval = setInterval(() => {
+                loadingText.textContent = analysisMessages[messageIndex];
+                messageIndex = (messageIndex + 1) % analysisMessages.length;
+             }, 1500);
+         }
+
+        function simulateDetections() {
+            detectionBoxes.innerHTML = '';
+            const numBoxes = Math.floor(Math.random() * 3) + 1;
+            
+            for (let i = 0; i < numBoxes; i++) {
+                const box = document.createElement('div');
+                box.className = 'detection-box absolute';
+                box.style.left = `${Math.random() * 70 + 10}%`;
+                box.style.top = `${Math.random() * 70 + 10}%`;
+                box.style.width = '80px';
+                box.style.height = '80px';
+                detectionBoxes.appendChild(box);
+            }
+        }
+
+         startLoadingAnimation();
+        initializeWebSocket();
+
+        endAnalysisButton.addEventListener('click', () => {
+            if (videoWs && videoWs.readyState === WebSocket.OPEN) {
+                videoWs.close();
+            }
+            window.location.href = '/';
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (videoWs && videoWs.readyState === WebSocket.OPEN) {
+                videoWs.close();
+            }
+        });
+    </script>
+</body>
+</html>
