@@ -44,7 +44,7 @@ async def get_response(request: MessageRequest):
 async def chatbot(request: Request):
     return templates.TemplateResponse("chatbot.html", {"request": request})
 
-GOOGLE_API_KEY = "AIzaSyA-tAJWZDUcDpMEo8IfT3wEI9D39KMKVV8"
+GOOGLE_API_KEY = "API_KEY"
 if not GOOGLE_API_KEY:
     raise ValueError("API_KEY environment variable not set. Check your .env file.")
 
@@ -211,7 +211,7 @@ class AudioLoop:
 class SimpleGeminiVoice:
     def __init__(self):
         self.audio_queue = asyncio.Queue()
-        self.api_key = "AIzaSyA-tAJWZDUcDpMEo8IfT3wEI9D39KMKVV8"
+        self.api_key = "API_KEY"
         self.model = "gemini-2.0-flash-exp"
         self.uri = f"wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key={self.api_key}"
         self.FORMAT = pyaudio.paInt16
